@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Table {{ table.table_number }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <!-- Table Number -->
+                        <div class="mb-3">
+                            <label for="id_table_number" class="form-label">Table Number *</label>
+                            <input type="text" name="table_number" class="form-control" id="id_table_number" 
+                                   value="{{ table.table_number }}" required>
+                        </div>
+                        
+                        <!-- Capacity -->
+                        <div class="mb-3">
+                            <label for="id_capacity" class="form-label">Capacity *</label>
+                            <input type="number" name="capacity" class="form-control" id="id_capacity" 
+                                   min="1" max="10" value="{{ table.capacity }}" required>
+                        </div>
+                        
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="id_location" class="form-label">Location *</label>
+                            <input type="text" name="location" class="form-control" id="id_location" 
+                                   value="{{ table.location }}" required>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="id_status" class="form-label">Status *</label>
+                            <select name="status" class="form-control" id="id_status" required>
+                                <option value="Available" {% if table.status == 'Available' %}selected{% endif %}>Available</option>
+                                <option value="Occupied" {% if table.status == 'Occupied' %}selected{% endif %}>Occupied</option>
+                                <option value="Reserved" {% if table.status == 'Reserved' %}selected{% endif %}>Reserved</option>
+                                <option value="Maintenance" {% if table.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="3">{{ table.description }}</textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Table
+                            </button>
+                            <a href="{% url 'manage_tables' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Table Information -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Table Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> {{ table.created_at|date:"F d, Y H:i" }}</p>
+                            <p><strong>Last Updated:</strong> {{ table.updated_at|date:"F d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Current Status:</strong> 
+                                <span class="badge bg-{% if table.status == 'Available' %}success{% elif table.status == 'Reserved' %}warning{% elif table.status == 'Occupied' %}info{% else %}secondary{% endif %}">
+                                    {{ table.status }}
+                                </span>
+                            </p>
+                            <p><strong>Active Reservations:</strong> {{ table.reservations.count }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Table</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>Table {{ table.table_number }}</strong>?</p>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    This action cannot be undone. All reservations for this table will be deleted.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'delete_table' table.id %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete Table
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const tableNumber = document.getElementById('id_table_number').value.trim();
+        const capacity = document.getElementById('id_capacity').value;
+        
+        if (!tableNumber) {
+            e.preventDefault();
+            alert('Table number is required.');
+            document.getElementById('id_table_number').focus();
+            return false;
+        }
+        
+        if (capacity < 1 || capacity > 10) {
+            e.preventDefault();
+            alert('Capacity must be between 1 and 10.');
+            document.getElementById('id_capacity').focus();
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

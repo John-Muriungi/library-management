@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Table</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <!-- Table Number -->
+                        <div class="mb-3">
+                            <label for="id_table_number" class="form-label">Table Number *</label>
+                            <input type="text" name="table_number" class="form-control" id="id_table_number" 
+                                   placeholder="e.g., T-001, A-101, Study-1" required>
+                            <div class="form-text">Unique identifier for the table</div>
+                        </div>
+                        
+                        <!-- Capacity -->
+                        <div class="mb-3">
+                            <label for="id_capacity" class="form-label">Capacity *</label>
+                            <input type="number" name="capacity" class="form-control" id="id_capacity" 
+                                   min="1" max="10" value="4" required>
+                            <div class="form-text">Number of people the table can accommodate</div>
+                        </div>
+                        
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="id_location" class="form-label">Location *</label>
+                            <input type="text" name="location" class="form-control" id="id_location" 
+                                   placeholder="e.g., Main Hall, Reading Room, Quiet Zone" required>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="id_status" class="form-label">Status *</label>
+                            <select name="status" class="form-control" id="id_status" required>
+                                <option value="Available" selected>Available</option>
+                                <option value="Occupied">Occupied</option>
+                                <option value="Reserved">Reserved</option>
+                                <option value="Maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description (Optional)</label>
+                            <textarea name="description" class="form-control" id="id_description" 
+                                      rows="3" placeholder="Any special features or notes about this table..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Table
+                            </button>
+                            <a href="{% url 'manage_tables' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Quick Tips -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Table Setup Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Use consistent numbering (e.g., T-001, T-002, etc.)</li>
+                        <li>Consider table locations for better organization</li>
+                        <li>Set appropriate capacity based on table size</li>
+                        <li>Tables set to "Maintenance" won't be available for reservation</li>
+                        <li>Update status regularly to reflect actual availability</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-generate table number suggestion
+    const tableNumberInput = document.getElementById('id_table_number');
+    const locationInput = document.getElementById('id_location');
+    
+    locationInput.addEventListener('change', function() {
+        if (!tableNumberInput.value) {
+            const location = this.value.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 1);
+            if (location) {
+                tableNumberInput.value = location.toUpperCase() + '-001';
+            }
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const tableNumber = tableNumberInput.value.trim();
+        const capacity = document.getElementById('id_capacity').value;
+        
+        if (!tableNumber) {
+            e.preventDefault();
+            alert('Please enter a table number.');
+            tableNumberInput.focus();
+            return false;
+        }
+        
+        if (capacity < 1 || capacity > 10) {
+            e.preventDefault();
+            alert('Capacity must be between 1 and 10.');
+            document.getElementById('id_capacity').focus();
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}
+

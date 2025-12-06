@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-table"></i> Reserve a Study Table</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <!-- Date and Time -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="reservation_date" class="form-label">Reservation Date *</label>
+                                <input type="date" name="reservation_date" class="form-control" 
+                                       id="reservation_date" required min="{{ today|date:'Y-m-d' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="start_time" class="form-label">Start Time *</label>
+                                <input type="time" name="start_time" class="form-control" id="start_time" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="end_time" class="form-label">End Time *</label>
+                                <input type="time" name="end_time" class="form-control" id="end_time" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Table Selection -->
+                        <div class="mb-3">
+                            <label for="table" class="form-label">Select Table *</label>
+                            <select name="table" class="form-control" id="table" required>
+                                <option value="">-- Select a Table --</option>
+                                {% for table in tables %}
+                                <option value="{{ table.id }}">
+                                    Table {{ table.table_number }} ({{ table.capacity }} seats) - {{ table.location }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if not tables %}
+                            <div class="alert alert-warning mt-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                No tables are currently available. Please check back later.
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Purpose -->
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Purpose (Optional)</label>
+                            <textarea name="purpose" class="form-control" id="purpose" rows="3" 
+                                      placeholder="What will you be working on?"></textarea>
+                        </div>
+                        
+                        <!-- Terms -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the library's table reservation policy
+                            </label>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success" {% if not tables %}disabled{% endif %}>
+                                <i class="fas fa-calendar-check"></i> Submit Reservation Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Available Tables Info -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Available Tables</h5>
+                </div>
+                <div class="card-body">
+                    {% if tables %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Table Number</th>
+                                    <th>Capacity</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for table in tables %}
+                                <tr>
+                                    <td>Table {{ table.table_number }}</td>
+                                    <td>{{ table.capacity }} seats</td>
+                                    <td>{{ table.location }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Available</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-table fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No tables are currently available for reservation.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('reservation_date').min = today;
+    
+    // Set default times
+    const now = new Date();
+    const startTime = document.getElementById('start_time');
+    const endTime = document.getElementById('end_time');
+    
+    // Set default start time to next hour
+    const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+    startTime.value = nextHour.toTimeString().substring(0, 5);
+    
+    // Set default end time to 2 hours after start
+    const endHour = new Date(nextHour.getTime() + 2 * 60 * 60 * 1000);
+    endTime.value = endHour.toTimeString().substring(0, 5);
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const reservationDate = document.getElementById('reservation_date').value;
+        const startTimeVal = startTime.value;
+        const endTimeVal = endTime.value;
+        const selectedTable = document.getElementById('table').value;
+        const terms = document.getElementById('terms').checked;
+        
+        // Basic validation
+        if (!reservationDate || !startTimeVal || !endTimeVal || !selectedTable) {
+            e.preventDefault();
+            alert('Please fill all required fields.');
+            return false;
+        }
+        
+        if (!terms) {
+            e.preventDefault();
+            alert('Please agree to the terms.');
+            document.getElementById('terms').focus();
+            return false;
+        }
+        
+        // Time validation
+        if (startTimeVal >= endTimeVal) {
+            e.preventDefault();
+            alert('End time must be after start time.');
+            return false;
+        }
+        
+        // Show loading
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

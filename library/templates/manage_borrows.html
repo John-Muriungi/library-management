@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3">Librarian Menu</h5>
+                <ul class="nav flex-column">
+                    <li>
+                        <a href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_borrows' %}" class="{% if request.path == '/librarian/borrows/' %}active{% endif %}">
+                            <i class="fas fa-exchange-alt"></i> Manage Borrows
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_reservations' %}">
+                            <i class="fas fa-calendar-alt"></i> Manage Reservations
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'add_book' %}">
+                            <i class="fas fa-plus-circle"></i> Add Book
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'book_list' %}">
+                            <i class="fas fa-book"></i> All Books
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Book Borrows</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Options -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="GET" class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-select" onchange="this.form.submit()">
+                                        <option value="">All Status</option>
+                                        <option value="Borrowed" {% if request.GET.status == 'Borrowed' %}selected{% endif %}>Borrowed</option>
+                                        <option value="Returned" {% if request.GET.status == 'Returned' %}selected{% endif %}>Returned</option>
+                                        <option value="Overdue" {% if request.GET.status == 'Overdue' %}selected{% endif %}>Overdue</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Search</label>
+                                    <input type="text" name="search" class="form-control" placeholder="Search user or book..." value="{{ request.GET.search|default:'' }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <a href="{% url 'manage_borrows' %}" class="btn btn-outline-secondary w-100">
+                                        <i class="fas fa-redo"></i> Reset
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-warning">
+                        <h6>Active Borrows</h6>
+                        <h3>{{ active_borrows }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-danger">
+                        <h6>Overdue Books</h6>
+                        <h3>{{ overdue_books }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-success">
+                        <h6>Returned Today</h6>
+                        <h3>{{ returned_today }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-info">
+                        <h6>Total Records</h6>
+                        <h3>{{ total_records }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Borrow Records Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-book"></i> All Borrow Records</h5>
+                </div>
+                <div class="card-body">
+                    {% if borrows %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Book</th>
+                                    <th>Borrow Date</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Fine</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for borrow in borrows %}
+                                <tr class="{% if borrow.is_overdue %}table-danger{% elif borrow.status == 'Returned' %}table-success{% endif %}">
+                                    <td>{{ borrow.id }}</td>
+                                    <td>
+                                        <strong>{{ borrow.user.username }}</strong><br>
+                                        <small class="text-muted">{{ borrow.user.get_full_name|default:"No name" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ borrow.book.title|truncatewords:3 }}</strong><br>
+                                        <small class="text-muted">by {{ borrow.book.author }}</small>
+                                    </td>
+                                    <td>{{ borrow.borrow_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {{ borrow.due_date|date:"M d, Y" }}
+                                        {% if borrow.is_overdue %}
+                                        <br><small class="text-danger">{{ borrow.days_overdue }} days overdue</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if borrow.status == 'Borrowed' %}warning{% elif borrow.status == 'Returned' %}success{% elif borrow.status == 'Overdue' %}danger{% else %}secondary{% endif %}">
+                                            {{ borrow.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if borrow.fine_amount > 0 %}
+                                        <span class="badge bg-danger">${{ borrow.fine_amount }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success">$0.00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if borrow.status == 'Borrowed' or borrow.status == 'Overdue' %}
+                                        <form method="POST" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="borrow_id" value="{{ borrow.id }}">
+                                            <button type="submit" name="action" value="return" class="btn btn-sm btn-success" 
+                                                    onclick="return confirm('Mark book as returned?')">
+                                                <i class="fas fa-check"></i> Return
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" 
+                                                data-bs-target="#extendModal{{ borrow.id }}">
+                                            <i class="fas fa-calendar-plus"></i> Extend
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'book_detail' borrow.book.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <!-- Extend Due Date Modal -->
+                                <div class="modal fade" id="extendModal{{ borrow.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Extend Due Date</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="borrow_id" value="{{ borrow.id }}">
+                                                <div class="modal-body">
+                                                    <p>Extend due date for: <strong>{{ borrow.book.title }}</strong></p>
+                                                    <p>Current due date: {{ borrow.due_date|date:"M d, Y" }}</p>
+                                                    <div class="mb-3">
+                                                        <label for="new_due_date{{ borrow.id }}" class="form-label">New Due Date</label>
+                                                        <input type="date" name="new_due_date" class="form-control" 
+                                                               id="new_due_date{{ borrow.id }}" required 
+                                                               min="{{ borrow.due_date|date:'Y-m-d' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" name="action" value="extend" class="btn btn-primary">
+                                                        Extend Due Date
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if borrows.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if borrows.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ borrows.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in borrows.paginator.page_range %}
+                                {% if borrows.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > borrows.number|add:'-3' and num < borrows.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if borrows.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ borrows.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Next
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-book fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Borrow Records Found</h4>
+                        <p>There are no borrow records matching your criteria.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Overdue Books</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if overdue_list %}
+                            <div class="list-group">
+                                {% for overdue in overdue_list %}
+                                <div class="list-group-item list-group-item-danger">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ overdue.book.title|truncatewords:3 }}</h6>
+                                        <small>{{ overdue.days_overdue }} days</small>
+                                    </div>
+                                    <p class="mb-1">Borrowed by: {{ overdue.user.username }}</p>
+                                    <small>Due: {{ overdue.due_date|date:"M d, Y" }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No overdue books. Great job!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-history"></i> Recent Returns</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_returns %}
+                            <div class="list-group">
+                                {% for return in recent_returns %}
+                                <div class="list-group-item list-group-item-success">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ return.book.title|truncatewords:3 }}</h6>
+                                        <small>{{ return.return_date|timesince }} ago</small>
+                                    </div>
+                                    <p class="mb-1">Returned by: {{ return.user.username }}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No recent returns.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- JavaScript for date input -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date for extension to today
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.min = today;
+    });
+    
+    // Auto-submit forms with data-action
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.hasAttribute('data-confirm')) {
+                if (!confirm(submitBtn.getAttribute('data-confirm'))) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}<option value="Fiction">Fiction</option>
+                                <option value="Non-Fiction">Non-Fiction</option>
+                                <option value="Science">Science</option>
+                                <option value="Technology">Technology</option>
+                                <option value="History">History</option>
+                                <option value="Biography">Biography</option>
+                                <option value="Children">Children</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="4"></textarea>
+                        </div>
+                        
+                        <!-- Total Copies -->
+                        <div class="mb-3">
+                            <label for="id_total_copies" class="form-label">Total Copies *</label>
+                            <input type="number" name="total_copies" class="form-control" id="id_total_copies" min="1" value="1" required>
+                        </div>
+                        
+                        <!-- Cover Image -->
+                        <div class="mb-3">
+                            <label for="id_cover_image" class="form-label">Cover Image</label>
+                            <input type="file" name="cover_image" class="form-control" id="id_cover_image" accept="image/*">
+                            <div class="form-text">Optional: Upload a book cover image (JPG, PNG, etc.)</div>
+                        </div>  
+                        <div class="d-grid gap-2 d-md-flex mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                

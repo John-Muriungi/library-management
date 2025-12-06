@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3">Admin Menu</h5>
+                <ul class="nav flex-column">
+                    <li>
+                        <a href="{% url 'dashboard' %}" class="{% if request.path == '/dashboard/' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/" target="_blank">
+                            <i class="fas fa-cog"></i> Admin Panel
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#users">
+                            <i class="fas fa-users"></i> User Management
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#books">
+                            <i class="fas fa-book"></i> Book Analytics
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#reading">
+                            <i class="fas fa-book-reader"></i> Reading Activities
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Admin Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <span class="badge bg-danger">
+                        <i class="fas fa-user-cog"></i> Administrator
+                    </span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-book">
+                        <h6>Total Users</h6>
+                        <h3>{{ total_users }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-user">
+                        <h6>Active Borrows</h6>
+                        <h3>{{ active_borrows }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-table">
+                        <h6>Available Tables</h6>
+                        <h3>{{ available_tables }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-success">
+                        <h6>Currently Reading</h6>
+                        <h3>{{ reading_now.count }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Reading Activities -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card" id="reading">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-book-reader"></i> Currently Reading</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if reading_now %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Book</th>
+                                            <th>Started</th>
+                                            <th>Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for activity in reading_now %}
+                                        <tr>
+                                            <td>{{ activity.user.username }}</td>
+                                            <td>{{ activity.book.title|truncatewords:3 }}</td>
+                                            <td>{{ activity.start_time|timesince }} ago</td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ activity.start_time|timesince }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No active reading sessions.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Books -->
+                <div class="col-md-6">
+                    <div class="card" id="books">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-line"></i> Most Popular Books</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if popular_books %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Book</th>
+                                            <th>Borrow Count</th>
+                                            <th>Available</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for book in popular_books %}
+                                        <tr>
+                                            <td><span class="badge bg-primary">#{{ forloop.counter }}</span></td>
+                                            <td>{{ book.title|truncatewords:4 }}</td>
+                                            <td>{{ book.borrow_count }}</td>
+                                            <td>
+                                                {% if book.available_copies > 0 %}
+                                                <span class="badge bg-success">{{ book.available_copies }}</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Out</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No borrow data available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Users -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card" id="users">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-users"></i> Recent Users</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_users %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Joined</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in recent_users %}
+                                        <tr>
+                                            <td>{{ user.username }}</td>
+                                            <td>{{ user.get_full_name|default:"Not set" }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if user.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No users found.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

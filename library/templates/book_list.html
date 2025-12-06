@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="GET" action="{% url 'book_list' %}">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search books...">
+                    <select class="form-select" name="category" style="max-width: 200px;">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                            {{ category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% if user.groups.filter.name == 'Librarian' or user.is_staff %}
+        <div class="col-md-4 text-end">
+            <a href="{% url 'add_book' %}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Add New Book
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Books Grid -->
+    <div class="row">
+        {% for book in books %}
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="position-relative">
+                    {% if book.cover_image %}
+                    <img src="{{ book.cover_image.url }}" class="card-img-top book-cover" alt="{{ book.title }}">
+                    {% else %}
+                    <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
+                         class="card-img-top book-cover" alt="{{ book.title }}">
+                    {% endif %}
+                    <span class="position-absolute top-0 end-0 badge bg-{% if book.available_copies > 0 %}success{% else %}danger{% endif %} m-2">
+                        {{ book.available_copies }} available
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">{{ book.title|truncatewords:6 }}</h6>
+                    <p class="card-text text-muted small">{{ book.author }}</p>
+                    <span class="badge bg-primary mb-2">{{ book.category }}</span>
+                    <p class="card-text small">{{ book.description|truncatewords:15 }}</p>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'book_detail' book.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-info-circle"></i> Details
+                        </a>
+                        {% if user.is_authenticated and book.available_copies > 0 %}
+                        <a href="{% url 'borrow_book' book.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-book"></i> Borrow
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No books found</h4>
+                <p>Try adjusting your search criteria</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if books.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if books.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ books.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in books.paginator.page_range %}
+                {% if books.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if books.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ books.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

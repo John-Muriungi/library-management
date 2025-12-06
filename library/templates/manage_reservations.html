@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3">Librarian Menu</h5>
+                <ul class="nav flex-column">
+                    <li>
+                        <a href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_borrows' %}">
+                            <i class="fas fa-exchange-alt"></i> Manage Borrows
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_reservations' %}" class="{% if request.path == '/librarian/reservations/' %}active{% endif %}">
+                            <i class="fas fa-calendar-alt"></i> Manage Reservations
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'add_book' %}">
+                            <i class="fas fa-plus-circle"></i> Add Book
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'book_list' %}">
+                            <i class="fas fa-book"></i> All Books
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Table Reservations</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Options -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="GET" class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-select" onchange="this.form.submit()">
+                                        <option value="">All Status</option>
+                                        <option value="Pending" {% if request.GET.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option value="Confirmed" {% if request.GET.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Date Range</label>
+                                    <input type="date" name="date" class="form-control" value="{{ request.GET.date|default:'' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Search</label>
+                                    <input type="text" name="search" class="form-control" placeholder="Search user or table..." value="{{ request.GET.search|default:'' }}">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <a href="{% url 'manage_reservations' %}" class="btn btn-outline-secondary w-100">
+                                        <i class="fas fa-redo"></i> Reset
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-warning">
+                        <h6>Pending</h6>
+                        <h3>{{ pending_count }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-success">
+                        <h6>Confirmed</h6>
+                        <h3>{{ confirmed_count }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-info">
+                        <h6>Today</h6>
+                        <h3>{{ today_count }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-secondary">
+                        <h6>Total</h6>
+                        <h3>{{ total_count }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservations Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-table"></i> All Reservations</h5>
+                        <span class="badge bg-primary">Showing {{ reservations.count }} of {{ total_count }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reservations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Table</th>
+                                    <th>Date & Time</th>
+                                    <th>Duration</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reservation in reservations %}
+                                <tr class="{% if reservation.status == 'Pending' %}table-warning{% elif reservation.status == 'Confirmed' %}table-success{% elif reservation.status == 'Cancelled' %}table-secondary{% endif %}">
+                                    <td>{{ reservation.id }}</td>
+                                    <td>
+                                        <strong>{{ reservation.user.username }}</strong><br>
+                                        <small class="text-muted">{{ reservation.user.get_full_name|default:"No name" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>Table {{ reservation.table.table_number }}</strong><br>
+                                        <small class="text-muted">
+                                            {{ reservation.table.location }} ({{ reservation.table.capacity }} seats)
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ reservation.reservation_date|date:"M d, Y" }}</strong><br>
+                                        <small class="text-muted">
+                                            {{ reservation.start_time|time:"H:i" }} - {{ reservation.end_time|time:"H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                       {{ reservation.duration_hours }}h {{ reservation.duration_minutes }}m
+                                    </td>
+                                    <td>
+                                        <span title="{{ reservation.purpose|default:'No purpose specified' }}">
+                                            {{ reservation.purpose|truncatechars:30|default:"-" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if reservation.status == 'Pending' %}warning{% elif reservation.status == 'Confirmed' %}success{% elif reservation.status == 'Cancelled' %}secondary{% else %}info{% endif %}">
+                                            {{ reservation.status }}
+                                        </span>
+                                        {% if reservation.is_active %}
+                                        <br><small class="text-success">Active now</small>
+                                        {% elif reservation.is_upcoming %}
+                                        <br><small class="text-info">Upcoming</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ reservation.created_at|date:"M d" }}<br>
+                                        <small class="text-muted">{{ reservation.created_at|time:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            {% if reservation.status == 'Pending' %}
+                                            <form method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                                <button type="submit" name="action" value="confirm" class="btn btn-sm btn-success" 
+                                                        onclick="return confirm('Confirm this reservation?')">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                                <button type="submit" name="action" value="cancel" class="btn btn-sm btn-danger" 
+                                                        onclick="return confirm('Cancel this reservation?')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                            {% elif reservation.status == 'Confirmed' %}
+                                            <form method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                                <button type="submit" name="action" value="complete" class="btn btn-sm btn-info" 
+                                                        onclick="return confirm('Mark as completed?')">
+                                                    <i class="fas fa-check-double"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                                <button type="submit" name="action" value="cancel" class="btn btn-sm btn-danger" 
+                                                        onclick="return confirm('Cancel this confirmed reservation?')">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            
+                                            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" 
+                                                    data-bs-target="#detailsModal{{ reservation.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Details Modal -->
+                                <div class="modal fade" id="detailsModal{{ reservation.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Reservation Details</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>User Information</h6>
+                                                        <p><strong>Username:</strong> {{ reservation.user.username }}</p>
+                                                        <p><strong>Name:</strong> {{ reservation.user.get_full_name|default:"Not provided" }}</p>
+                                                        <p><strong>Email:</strong> {{ reservation.user.email|default:"Not provided" }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>Table Information</h6>
+                                                        <p><strong>Table:</strong> {{ reservation.table.table_number }}</p>
+                                                        <p><strong>Location:</strong> {{ reservation.table.location }}</p>
+                                                        <p><strong>Capacity:</strong> {{ reservation.table.capacity }} persons</p>
+                                                        <p><strong>Status:</strong> {{ reservation.table.status }}</p>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>Reservation Details</h6>
+                                                        <p><strong>Date:</strong> {{ reservation.reservation_date|date:"F d, Y" }}</p>
+                                                        <p><strong>Time:</strong> {{ reservation.start_time|time:"H:i" }} - {{ reservation.end_time|time:"H:i" }}</p>
+                                                        <p><strong>Duration:</strong>  
+                                                             {{ reservation.duration_hours }} hours {{ reservation.duration_minutes }} minutes
+                                                        </p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>Status Information</h6>
+                                                        <p><strong>Status:</strong> 
+                                                            <span class="badge bg-{% if reservation.status == 'Pending' %}warning{% elif reservation.status == 'Confirmed' %}success{% elif reservation.status == 'Cancelled' %}secondary{% else %}info{% endif %}">
+                                                                {{ reservation.status }}
+                                                            </span>
+                                                        </p>
+                                                        <p><strong>Created:</strong> {{ reservation.created_at|date:"M d, Y H:i" }}</p>
+                                                        <p><strong>Purpose:</strong> {{ reservation.purpose|default:"Not specified" }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                {% if reservation.status == 'Pending' %}
+                                                <form method="POST" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                                    <button type="submit" name="action" value="confirm" class="btn btn-success">
+                                                        Confirm
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if reservations.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if reservations.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reservations.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in reservations.paginator.page_range %}
+                                {% if reservations.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > reservations.number|add:'-3' and num < reservations.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if reservations.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reservations.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Next
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-table fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Reservations Found</h4>
+                        <p>There are no reservations matching your criteria.</p>
+                        <a href="{% url 'manage_reservations' %}" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> Clear Filters
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Today's Reservations -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-calendar-day"></i> Today's Reservations</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if todays_reservations %}
+                            <div class="list-group">
+                                {% for res in todays_reservations %}
+                                <div class="list-group-item {% if res.status == 'Confirmed' %}list-group-item-success{% elif res.status == 'Pending' %}list-group-item-warning{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">Table {{ res.table.table_number }}</h6>
+                                        <small>{{ res.start_time|time:"H:i" }} - {{ res.end_time|time:"H:i" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ res.user.username }}</p>
+                                    <small>Status: 
+                                        <span class="badge bg-{% if res.status == 'Confirmed' %}success{% else %}warning{% endif %}">
+                                            {{ res.status }}
+                                        </span>
+                                    </small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No reservations for today.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="p-3">
+                                        <h3>{{ pending_count }}</h3>
+                                        <p class="text-warning mb-0">Pending</p>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3">
+                                        <h3>{{ confirmed_count }}</h3>
+                                        <p class="text-success mb-0">Confirmed</p>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3">
+                                        <h3>{{ most_active_user_count }}</h3>
+                                        <p class="text-primary mb-0">Most Active User</p>
+                                        <small>{{ most_active_user|default:"N/A" }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3">
+                                        <h3>{{ popular_table_count }}</h3>
+                                        <p class="text-info mb-0">Popular Table</p>
+                                        <small>{{ popular_table|default:"N/A" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- JavaScript for actions -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date as default for date filter
+    const dateFilter = document.querySelector('input[name="date"]');
+    if (dateFilter && !dateFilter.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateFilter.value = today;
+    }
+    
+    // Auto-refresh page every 60 seconds for live updates
+    setInterval(function() {
+        // Only refresh if not on a modal or editing
+        if (!document.querySelector('.modal.show')) {
+            window.location.reload();
+        }
+    }, 60000);
+    
+    // Confirm before actions
+    const actionForms = document.querySelectorAll('form[action*="manage_reservations"]');
+    actionForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const actionBtn = this.querySelector('button[type="submit"]:focus');
+            if (actionBtn) {
+                const action = actionBtn.value;
+                let message = 'Are you sure?';
+                
+                if (action === 'confirm') {
+                    message = 'Confirm this reservation?';
+                } else if (action === 'cancel') {
+                    message = 'Cancel this reservation?';
+                } else if (action === 'complete') {
+                    message = 'Mark as completed?';
+                }
+                
+                if (!confirm(message)) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

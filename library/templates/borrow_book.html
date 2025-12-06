@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-book"></i> Borrow Book</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Book Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            {% if book.cover_image %}
+                            <img src="{{ book.cover_image.url }}" class="img-fluid rounded" alt="{{ book.title }}" style="max-height: 200px;">
+                            {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px; width: 150px; margin: 0 auto;">
+                                <i class="fas fa-book fa-4x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <h3>{{ book.title }}</h3>
+                            <p class="text-muted">by {{ book.author }}</p>
+                            <div class="mb-3">
+                                <span class="badge bg-primary">{{ book.category }}</span>
+                                <span class="badge bg-success">ISBN: {{ book.isbn }}</span>
+                            </div>
+                            <p><strong>Available Copies:</strong> 
+                                <span class="badge bg-{% if book.available_copies > 0 %}success{% else %}danger{% endif %}">
+                                    {{ book.available_copies }}
+                                </span>
+                            </p>
+                            <p><strong>Total Copies:</strong> {{ book.total_copies }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Borrow Form -->
+                    {% if book.available_copies > 0 %}
+                        {% if not existing_borrow %}
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> Borrowing Information</h5>
+                            <ul class="mb-0">
+                                <li>Standard borrowing period is <strong>14 days</strong></li>
+                                <li>You can borrow this book until the due date</li>
+                                <li>Late returns incur a fine of <strong>$5 per day</strong></li>
+                                <li>Make sure to return the book on time</li>
+                            </ul>
+                        </div>
+
+                        <form method="POST">
+                            {% csrf_token %}
+                            
+                            <!-- Due Date Selection -->
+                            <div class="mb-4">
+                                <label for="due_date" class="form-label"><strong>Select Due Date *</strong></label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <input type="date" name="due_date" class="form-control" id="due_date" 
+                                               min="{{ min_due_date }}" max="{{ max_due_date }}" required>
+                                        <div class="form-text">
+                                            Select when you plan to return the book (between 7 and 30 days from today)
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Quick Selection</h6>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDueDate(7)">
+                                                        1 Week
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDueDate(14)">
+                                                        2 Weeks
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDueDate(21)">
+                                                        3 Weeks
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDueDate(30)">
+                                                        1 Month
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="terms" required>
+                                    <label class="form-check-label" for="terms">
+                                        I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a> of borrowing
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2 d-md-flex">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-book"></i> Confirm Borrow
+                                </button>
+                                <a href="{% url 'book_detail' book.id %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Book Details
+                                </a>
+                                <a href="{% url 'book_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                            <h4>You Already Have This Book</h4>
+                            <p>You have already borrowed this book and it hasn't been returned yet.</p>
+                            <p>Please return the book before borrowing it again.</p>
+                            <div class="mt-3">
+                                <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                                    <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                                </a>
+                                <a href="{% url 'book_detail' book.id %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-book"></i> Back to Book
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <div class="alert alert-danger text-center">
+                        <i class="fas fa-times-circle fa-2x mb-3"></i>
+                        <h4>Book Not Available</h4>
+                        <p>Sorry, all copies of this book are currently borrowed by other members.</p>
+                        <p>Please check back later or try a different book.</p>
+                        <div class="mt-3">
+                            <a href="{% url 'book_list' %}" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Browse Available Books
+                            </a>
+                            <a href="{% url 'book_detail' book.id %}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left"></i> Back to Book Details
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Borrowing Guidelines -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Borrowing Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle text-success"></i> Do's</h6>
+                            <ul>
+                                <li>Return books on or before the due date</li>
+                                <li>Handle books with care</li>
+                                <li>Report any damages immediately</li>
+                                <li>Keep books in a safe, dry place</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-times-circle text-danger"></i> Don'ts</h6>
+                            <ul>
+                                <li>Don't lend borrowed books to others</li>
+                                <li>Don't write or mark in library books</li>
+                                <li>Don't expose books to liquids</li>
+                                <li>Don't remove library labels or barcodes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Your Current Borrows -->
+            {% if user_borrows %}
+            <div class="card mt-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-book-reader"></i> Your Current Borrows</h5>
+                </div>
+                <div class="card-body">
+                    <p>You currently have {{ user_borrows.count }} book(s) borrowed:</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for borrow in user_borrows|slice:":3" %}
+                                <tr class="{% if borrow.is_overdue %}table-danger{% endif %}">
+                                    <td>{{ borrow.book.title|truncatewords:3 }}</td>
+                                    <td>{{ borrow.due_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if borrow.is_overdue %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Borrowed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if user_borrows.count > 3 %}
+                    <p class="text-muted">... and {{ user_borrows.count|add:"-3" }} more books</p>
+                    {% endif %}
+                    <div class="text-center mt-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-warning">
+                            <i class="fas fa-tachometer-alt"></i> View All in Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Borrowing Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Borrowing Period</h6>
+                <p>The standard borrowing period is 14 days. You may select a due date up to 30 days from today.</p>
+                
+                <h6>2. Renewals</h6>
+                <p>Books may be renewed once if no other member has reserved them. Renewals must be requested before the due date.</p>
+                
+                <h6>3. Late Returns</h6>
+                <p>Late returns incur a fine of $5 per day per book. Maximum fine is limited to the replacement cost of the book.</p>
+                
+                <h6>4. Lost or Damaged Books</h6>
+                <p>You are responsible for the care of borrowed books. Lost or damaged books must be replaced or paid for at the current market value.</p>
+                
+                <h6>5. Library Privileges</h6>
+                <p>Members with overdue books or unpaid fines may have borrowing privileges suspended until the matter is resolved.</p>
+                
+                <h6>6. Returns</h6>
+                <p>Books must be returned to the library during opening hours. Do not leave books outside the library.</p>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    By borrowing this book, you agree to all terms and conditions stated above.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for date handling -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Calculate minimum and maximum dates
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 7); // 7 days from today
+    
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30); // 30 days from today
+    
+    // Format dates for input
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+    };
+    
+    // Set default due date to 14 days from today
+    const defaultDueDate = new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 14);
+    document.getElementById('due_date').value = formatDate(defaultDueDate);
+    
+    // Set min and max attributes
+    document.getElementById('due_date').min = formatDate(minDate);
+    document.getElementById('due_date').max = formatDate(maxDate);
+    
+    // Function to set due date based on days
+    window.setDueDate = function(days) {
+        const newDate = new Date();
+        newDate.setDate(newDate.getDate() + days);
+        document.getElementById('due_date').value = formatDate(newDate);
+        
+        // Show confirmation message
+        const dueDateStr = newDate.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        
+        // Create a temporary alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+        alertDiv.innerHTML = `
+            <i class="fas fa-calendar-check"></i>
+            Due date set to: <strong>${dueDateStr}</strong> (${days} days from today)
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const form = document.querySelector('form');
+        form.insertBefore(alertDiv, form.firstChild);
+        
+        // Auto-remove alert after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    };
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const dueDateInput = document.getElementById('due_date');
+        const termsCheckbox = document.getElementById('terms');
+        
+        if (!dueDateInput.value) {
+            e.preventDefault();
+            alert('Please select a due date.');
+            dueDateInput.focus();
+            return false;
+        }
+        
+        if (!termsCheckbox.checked) {
+            e.preventDefault();
+            alert('You must agree to the Terms and Conditions.');
+            termsCheckbox.focus();
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+    });
+    
+    // Auto-set today's date in the background for calculations
+    window.todayDate = today;
+    window.minDueDate = formatDate(minDate);
+    window.maxDueDate = formatDate(maxDate);
+});
+</script>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.table th {
+    border-top: none;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.4em 0.8em;
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.alert {
+    border: none;
+    border-left: 4px solid;
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+}
+
+.alert-danger {
+    border-left-color: #dc3545;
+}
+
+.alert-success {
+    border-left-color: #198754;
+}
+</style>
+{% endblock %}

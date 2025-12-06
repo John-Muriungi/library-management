@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3">Librarian Menu</h5>
+                <ul class="nav flex-column">
+                    <li>
+                        <a href="{% url 'dashboard' %}" class="{% if request.path == '/dashboard/' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                         <a href="{% url 'manage_tables' %}">
+                            <i class="fas fa-table"></i> Manage Tables
+                         </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_borrows' %}">
+                            <i class="fas fa-exchange-alt"></i> Manage Borrows
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_reservations' %}">
+                            <i class="fas fa-calendar-alt"></i> Manage Reservations
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'add_book' %}">
+                            <i class="fas fa-plus-circle"></i> Add Book
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'book_list' %}">
+                            <i class="fas fa-book"></i> All Books
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Librarian Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <span class="badge bg-warning">
+                        <i class="fas fa-user-shield"></i> Librarian
+                    </span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-book">
+                        <h6>Total Books</h6>
+                        <h3>{{ total_books }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-user">
+                        <h6>Total Members</h6>
+                        <h3>{{ total_members }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-borrow">
+                        <h6>Books Borrowed</h6>
+                        <h3>{{ borrowed_count }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-danger">
+                        <h6>Overdue Books</h6>
+                        <h3>{{ overdue_count }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Borrows -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> Recent Borrows</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_borrows %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Book</th>
+                                            <th>Borrow Date</th>
+                                            <th>Due Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for borrow in recent_borrows %}
+                                        <tr class="{% if borrow.is_overdue %}table-danger{% endif %}">
+                                            <td>{{ borrow.user.username }}</td>
+                                            <td>{{ borrow.book.title|truncatewords:3 }}</td>
+                                            <td>{{ borrow.borrow_date|date:"M d" }}</td>
+                                            <td>{{ borrow.due_date|date:"M d" }}</td>
+                                            <td>
+                                                {% if borrow.is_overdue %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                                {% else %}
+                                                <span class="badge bg-success">{{ borrow.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No recent borrows.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if pending_reservations %}
+                            <h6>Pending Reservations: {{ pending_reservations.count }}</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for reservation in pending_reservations %}
+                                <li class="list-group-item">
+                                    <small>{{ reservation.user.username }} - Table {{ reservation.table.table_number }}</small>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            <a href="{% url 'manage_reservations' %}" class="btn btn-sm btn-primary mt-2">
+                                Manage All
+                            </a>
+                            {% else %}
+                            <p class="text-muted">No pending actions.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2 d-md-flex">
+                                <a href="{% url 'add_book' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus-circle"></i> Add New Book
+                                </a>
+                                <a href="{% url 'manage_borrows' %}" class="btn btn-warning">
+                                    <i class="fas fa-exchange-alt"></i> Manage Borrows
+                                </a>
+                                <a href="{% url 'manage_reservations' %}" class="btn btn-success">
+                                    <i class="fas fa-calendar-alt"></i> Manage Reservations
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

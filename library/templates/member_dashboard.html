@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3">Member Menu</h5>
+                <ul class="nav flex-column">
+                    <li>
+                        <a href="{% url 'dashboard' %}" class="{% if request.path == '/dashboard/' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'book_list' %}">
+                            <i class="fas fa-book"></i> Browse Books
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'reserve_table' %}">
+                            <i class="fas fa-table"></i> Reserve Table
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#borrowed-books">
+                            <i class="fas fa-book-reader"></i> My Borrowed Books
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#reservations">
+                            <i class="fas fa-calendar-check"></i> My Reservations
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Member Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <span class="badge bg-primary">
+                        <i class="fas fa-user"></i> {{ user.get_full_name|default:user.username }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-book">
+                        <h6>Books Borrowed</h6>
+                        <h3>{{ borrowed_books.count }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-user">
+                        <h6>Active Reservations</h6>
+                        <h3>{{ reservations.count }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Borrowed Books -->
+            <div class="card mb-4" id="borrowed-books">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-book-reader"></i> My Borrowed Books</h5>
+                </div>
+                <div class="card-body">
+                    {% if borrowed_books %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Author</th>
+                                    <th>Borrow Date</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for borrow in borrowed_books %}
+                                <tr class="{% if borrow.is_overdue %}table-danger{% endif %}">
+                                    <td>{{ borrow.book.title }}</td>
+                                    <td>{{ borrow.book.author }}</td>
+                                    <td>{{ borrow.borrow_date|date:"M d, Y" }}</td>
+                                    <td>{{ borrow.due_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if borrow.is_overdue %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        {% else %}
+                                        <span class="badge bg-success">{{ borrow.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'return_book' borrow.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-undo"></i> Return
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">You haven't borrowed any books yet.</p>
+                        <a href="{% url 'book_list' %}" class="btn btn-primary">
+                            <i class="fas fa-book"></i> Browse Books
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Reservations -->
+            <div class="card" id="reservations">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check"></i> My Reservations</h5>
+                </div>
+                <div class="card-body">
+                    {% if reservations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Table</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reservation in reservations %}
+                                <tr>
+                                    <td>Table {{ reservation.table.table_number }}</td>
+                                    <td>{{ reservation.reservation_date|date:"M d, Y" }}</td>
+                                    <td>{{ reservation.start_time|time:"H:i" }} - {{ reservation.end_time|time:"H:i" }}</td>
+                                    <td>{{ reservation.purpose|truncatewords:10 }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if reservation.status == 'Confirmed' %}success{% elif reservation.status == 'Pending' %}warning{% else %}secondary{% endif %}">
+                                            {{ reservation.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-table fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">You don't have any table reservations.</p>
+                        <a href="{% url 'reserve_table' %}" class="btn btn-success">
+                            <i class="fas fa-table"></i> Reserve Table
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

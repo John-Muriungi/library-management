@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-trash"></i> Delete Table</h4>
+                </div>
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-4x text-warning mb-3"></i>
+                    <h4>Delete Table {{ table.table_number }}?</h4>
+                    <p class="text-muted">This action cannot be undone.</p>
+                    
+                    <div class="card mb-3">
+                        <div class="card-body text-start">
+                            <p><strong>Table Number:</strong> {{ table.table_number }}</p>
+                            <p><strong>Location:</strong> {{ table.location }}</p>
+                            <p><strong>Capacity:</strong> {{ table.capacity }} persons</p>
+                            <p><strong>Status:</strong> {{ table.status }}</p>
+                            <p><strong>Reservations:</strong> {{ table.reservations.count }} active reservations</p>
+                        </div>
+                    </div>
+                    
+                    {% if table.reservations.count > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-circle"></i>
+                        This table has {{ table.reservations.count }} active reservation(s). 
+                        Deleting this table will also delete all associated reservations.
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-center">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Yes, Delete Table
+                            </button>
+                            <a href="{% url 'manage_tables' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

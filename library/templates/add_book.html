@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Book</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Book Title -->
+                        <div class="mb-3">
+                            <label for="id_title" class="form-label">Book Title *</label>
+                            <input type="text" name="title" class="form-control" id="id_title" required>
+                        </div>
+                        
+                        <!-- Author -->
+                        <div class="mb-3">
+                            <label for="id_author" class="form-label">Author *</label>
+                            <input type="text" name="author" class="form-control" id="id_author" required>
+                        </div>
+                        
+                        <!-- ISBN -->
+                        <div class="mb-3">
+                            <label for="id_isbn" class="form-label">ISBN *</label>
+                            <input type="text" name="isbn" class="form-control" id="id_isbn" required>
+                            <div class="form-text">13-digit International Standard Book Number</div>
+                        </div>
+                        
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label">Category *</label>
+                            <select name="category" class="form-control" id="id_category" required>
+                                <option value="">Select Category</option>
+                                <option value="Fiction">Fiction</option>
+                                <option value="Non-Fiction">Non-Fiction</option>
+                                <option value="Science">Science</option>
+                                <option value="Technology">Technology</option>
+                                <option value="History">History</option>
+                                <option value="Biography">Biography</option>
+                                <option value="Children">Children</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="4"></textarea>
+                        </div>
+                        
+                        <!-- Total Copies -->
+                        <div class="mb-3">
+                            <label for="id_total_copies" class="form-label">Total Copies *</label>
+                            <input type="number" name="total_copies" class="form-control" id="id_total_copies" min="1" value="1" required>
+                        </div>
+                        
+                        <!-- Cover Image -->
+                        <div class="mb-3">
+                            <label for="id_cover_image" class="form-label">Cover Image</label>
+                            <input type="file" name="cover_image" class="form-control" id="id_cover_image" accept="image/*">
+                            <div class="form-text">Optional: Upload a book cover image (JPG, PNG, etc.)</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Book
+                            </button>
+                            <a href="{% url 'book_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Quick Tips -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Quick Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Ensure ISBN is unique for each book</li>
+                        <li>Total copies should be at least 1</li>
+                        <li>Available copies will be set equal to total copies automatically</li>
+                        <li>Cover image is optional but recommended</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

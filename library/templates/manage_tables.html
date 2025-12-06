@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3">Table Management</h5>
+                <ul class="nav flex-column">
+                    <li>
+                        <a href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_tables' %}" class="active">
+                            <i class="fas fa-table"></i> Manage Tables
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'manage_reservations' %}">
+                            <i class="fas fa-calendar-alt"></i> Manage Reservations
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'add_table' %}">
+                            <i class="fas fa-plus-circle"></i> Add New Table
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'book_list' %}">
+                            <i class="fas fa-book"></i> All Books
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Tables</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'add_table' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus-circle"></i> Add Table
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter and Search -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="GET" class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Filter by Status</label>
+                                    <select name="status" class="form-select" onchange="this.form.submit()">
+                                        <option value="">All Status</option>
+                                        <option value="Available" {% if status_filter == 'Available' %}selected{% endif %}>Available</option>
+                                        <option value="Occupied" {% if status_filter == 'Occupied' %}selected{% endif %}>Occupied</option>
+                                        <option value="Reserved" {% if status_filter == 'Reserved' %}selected{% endif %}>Reserved</option>
+                                        <option value="Maintenance" {% if status_filter == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Search Tables</label>
+                                    <input type="text" name="search" class="form-control" 
+                                           placeholder="Search by table number, location, or description..." 
+                                           value="{{ search_query }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search"></i> Search
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-success">
+                        <h6>Available</h6>
+                        <h3>{{ available_tables }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-warning">
+                        <h6>Reserved</h6>
+                        <h3>{{ reserved_tables }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-info">
+                        <h6>Occupied</h6>
+                        <h3>{{ occupied_tables }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-secondary">
+                        <h6>Total Tables</h6>
+                        <h3>{{ total_tables }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Grid -->
+            <div class="row">
+                {% for table in tables %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-{% if table.status == 'Available' %}success{% elif table.status == 'Reserved' %}warning{% elif table.status == 'Occupied' %}info{% else %}secondary{% endif %}">
+                        <div class="card-header bg-{% if table.status == 'Available' %}success{% elif table.status == 'Reserved' %}warning{% elif table.status == 'Occupied' %}info{% else %}secondary{% endif %} text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Table {{ table.table_number }}</h5>
+                                <span class="badge bg-light text-dark">
+                                    {{ table.capacity }} <i class="fas fa-users"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> {{ table.location }}
+                            </p>
+                            <p class="card-text">
+                                <i class="fas fa-info-circle"></i> <strong>Status:</strong> 
+                                <span class="badge bg-{% if table.status == 'Available' %}success{% elif table.status == 'Reserved' %}warning{% elif table.status == 'Occupied' %}info{% else %}secondary{% endif %}">
+                                    {{ table.status }}
+                                </span>
+                            </p>
+                            {% if table.description %}
+                            <p class="card-text">
+                                <i class="fas fa-align-left"></i> <strong>Description:</strong><br>
+                                <small>{{ table.description|truncatechars:100 }}</small>
+                            </p>
+                            {% endif %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-alt"></i> Added: {{ table.created_at|date:"M d, Y" }}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'edit_table' table.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ table.id }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                                <a href="#" class="btn btn-sm btn-outline-info" 
+                                   data-bs-toggle="modal" data-bs-target="#statusModal{{ table.id }}">
+                                    <i class="fas fa-sync"></i> Status
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Modal -->
+                <div class="modal fade" id="deleteModal{{ table.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete Table</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete <strong>Table {{ table.table_number }}</strong>?</p>
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    This action cannot be undone. Any existing reservations for this table will also be deleted.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <form method="POST" action="{% url 'delete_table' table.id %}">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-danger">Delete Table</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Status Change Modal -->
+                <div class="modal fade" id="statusModal{{ table.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Change Table Status</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="{% url 'edit_table' table.id %}">
+                                {% csrf_token %}
+                                <div class="modal-body">
+                                    <p>Update status for <strong>Table {{ table.table_number }}</strong></p>
+                                    <div class="mb-3">
+                                        <label class="form-label">New Status</label>
+                                        <select name="status" class="form-control">
+                                            <option value="Available" {% if table.status == 'Available' %}selected{% endif %}>Available</option>
+                                            <option value="Occupied" {% if table.status == 'Occupied' %}selected{% endif %}>Occupied</option>
+                                            <option value="Reserved" {% if table.status == 'Reserved' %}selected{% endif %}>Reserved</option>
+                                            <option value="Maintenance" {% if table.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                                        </select>
+                                    </div>
+                                    <input type="hidden" name="table_number" value="{{ table.table_number }}">
+                                    <input type="hidden" name="capacity" value="{{ table.capacity }}">
+                                    <input type="hidden" name="location" value="{{ table.location }}">
+                                    <input type="hidden" name="description" value="{{ table.description|default:'' }}">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Update Status</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-table fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Tables Found</h4>
+                        <p>{% if status_filter or search_query %}No tables match your criteria.{% else %}No tables have been added yet.{% endif %}</p>
+                        <a href="{% url 'add_table' %}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Add Your First Table
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Table Legend -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Status Legend</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="status-indicator bg-success me-2" style="width: 20px; height: 20px; border-radius: 4px;"></div>
+                                <span>Available - Ready for reservation</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="status-indicator bg-warning me-2" style="width: 20px; height: 20px; border-radius: 4px;"></div>
+                                <span>Reserved - Booked for future use</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="status-indicator bg-info me-2" style="width: 20px; height: 20px; border-radius: 4px;"></div>
+                                <span>Occupied - Currently in use</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="status-indicator bg-secondary me-2" style="width: 20px; height: 20px; border-radius: 4px;"></div>
+                                <span>Maintenance - Not available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh for status updates
+    setInterval(function() {
+        window.location.reload();
+    }, 300000); // Refresh every 5 minutes
+    
+    // Quick status change
+    const statusSelects = document.querySelectorAll('select[name="status"]');
+    statusSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const form = this.closest('form');
+            if (form) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.stat-card {
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    text-align: center;
+}
+
+.bg-success { background: linear-gradient(45deg, #28a745, #218838); }
+.bg-warning { background: linear-gradient(45deg, #ffc107, #e0a800); }
+.bg-info { background: linear-gradient(45deg, #17a2b8, #138496); }
+.bg-secondary { background: linear-gradient(45deg, #6c757d, #545b62); }
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+.modal-footer {
+    border-top: none;
+}
+</style>
+{% endblock %}
